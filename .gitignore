@@ -3,3 +3,7 @@
 # ignore mnist data
 *ubyte
 
+
+*.gz
+
+*.jpg
