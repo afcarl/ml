@@ -5,7 +5,7 @@ import numpy as np
 from theano_stuff.binary_generator import NumberGenerator
 
 rng = np.random.RandomState(42)
-ng = NumberGenerator(lambda x, y: x + y)
+ng = NumberGenerator(lambda x, y: 2 * x + 4 * y)
 
 def _transfer(x):
     return T.tanh(x)
