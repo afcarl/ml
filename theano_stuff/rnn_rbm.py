@@ -2,6 +2,8 @@
 Two theano functions: one to train rnn-rbm, other to generate sample sequences from it
 For training: Given v^t, the rnn hidden state u^t and associated b_v^t, b_h^t parameters are deterministic and can be
 readily computed for each training sequence. SGD update on the parameters estimated via CD on individual time steps
+
+TODO: This
 """
 
 import glob
