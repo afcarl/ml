@@ -69,7 +69,7 @@ def test_net(n_epochs=1000, n_train=10000, n_test=1):
 
     TEST_BATCH = 10
 
-    N_HIDDEN = 4
+    N_HIDDEN = 2
     HIDDEN_STATE = np.zeros(shape=(MINI_BATCH, 1, N_HIDDEN))
     HIDDEN_STATE_TEST = np.zeros(shape=(TEST_BATCH, 1, N_HIDDEN))
 

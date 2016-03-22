@@ -27,7 +27,7 @@ v_2 =           2.
 v_1 =           0.5
 
 # learning parameters
-lr =            0.01 # learning rate
+lr =            0.001 # learning rate
 
 np.random.seed(42)
 

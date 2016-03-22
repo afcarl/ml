@@ -99,12 +99,12 @@ class RNN:
 def test_net(n_epochs=100, n_train=10000, n_test=1):
 
     LEARNING_RATE = 0.01
-    DECAY = 0.98
+    DECAY = 0.99
     MINI_BATCH = 100
 
     TEST_BATCH = 10
 
-    N_HIDDEN = 2
+    N_HIDDEN = 4
     HIDDEN_STATE = np.zeros(shape=(MINI_BATCH, 1, N_HIDDEN))
     HIDDEN_STATE_TEST = np.zeros(shape=(TEST_BATCH, 1, N_HIDDEN))
 
