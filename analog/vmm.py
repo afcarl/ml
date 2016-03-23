@@ -21,7 +21,6 @@ v_th_pfet =     0.65 # volts
 
 max_current =   1e7
 
-# maybe this works?
 v_2 =           2.
 # v_1 =           v_2 + v_dd * (1 - (1 / kappa)) - v_th_pfet - v_th_nfet
 v_1 =           0.5
