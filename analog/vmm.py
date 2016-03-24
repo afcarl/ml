@@ -87,15 +87,17 @@ def asinh(i_in, i_th=i_th):
 def build(test_in, test_out):
     # input and output vectors
     x = T.matrix(name='x', dtype=theano.config.floatX) # v_s
-    y = T.matrix(name='y', dtype=theano.config.floatX) # i_o
+    y = T.matrix(name='y', dtype=theano.config.floatX) # v_o
+
+    n_hidden = 3
 
     weights = list()
 
-    v_1, b_1, a_1 = vmm(2, 3, x)
+    v_1, b_1, a_1 = vmm(2, n_hidden, x)
     z_1 = asinh(a_1)
     weights += [v_1, b_1]
 
-    v_2, b_2, a_2 = vmm(3, 1, z_1)
+    v_2, b_2, a_2 = vmm(n_hidden, 1, z_1)
     z_2 = asinh(a_2)
     weights += [v_2, b_2]
 
@@ -130,7 +132,7 @@ if __name__=='__main__':
 
     test_in = np.asarray([[low_v, high_v], [high_v, low_v], [low_v, low_v], [high_v, high_v]])
     # test_out = np.asarray([[[low_i], [high_i], [low_i], [high_i]]])
-    test_out = np.asarray([[1], [2], [1], [2]])
+    test_out = np.asarray([[1], [1], [2], [2]])
 
     # below: testing the asinh function
     # v_in = T.scalar('v_in')
