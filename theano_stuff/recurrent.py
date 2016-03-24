@@ -105,7 +105,7 @@ class RNN:
 def test_net(n_epochs=1000, n_train=10000, n_test=1):
 
     LEARNING_RATE = 0.01
-    DECAY = 0.98
+    DECAY = 0.99
     MINI_BATCH = 100
 
     TEST_BATCH = 10
