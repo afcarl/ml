@@ -10,19 +10,21 @@ ng = NumberGenerator(lambda x, y: 2 * x + 4 * y)
 def _transfer(x):
     return T.tanh(x)
 
-def _get_weights(n_in, n_out, name, low=-0.5, high=0.5):
+
+def _get_weights(n_in, n_out, name, low=-1, high=1):
     """ Initialize a weight matrix of size `n_in` by `n_out` with random values from `low` to `high` """
-    return theano.shared(np.random.uniform(size=(n_in, n_out), low=low, high=high), name=name)
+    return theano.shared(np.asarray(rng.rand(n_in, n_out) * (high - low) - low, dtype=theano.config.floatX), name=name)
+
 
 def generate_rnn(n_in, n_out, n_hidden=50):
     """ Recurrent network with input dim `n_in` and output dim `n_out` """
 
     # input, target, initial hidden state, learning rate
-    input = T.tensor4(name='input')
-    target = T.tensor4(name='target')
-    hidden_state_low = T.tensor3(name='hidden')
-    hidden_state_high = T.tensor3(name='hidden')
-    learning_rate = T.scalar(name='learning_rate')
+    input = T.tensor4(name='input', dtype=theano.config.floatX)
+    target = T.tensor4(name='target', dtype=theano.config.floatX)
+    hidden_state_low = T.tensor3(name='hidden', dtype=theano.config.floatX)
+    hidden_state_high = T.tensor3(name='hidden', dtype=theano.config.floatX)
+    learning_rate = T.scalar(name='learning_rate', dtype=theano.config.floatX)
 
     # initialize weight matrices and biases
     low_w_hidden = _get_weights(n_hidden, n_hidden, 'low_w_hidden')
@@ -61,17 +63,18 @@ def generate_rnn(n_in, n_out, n_hidden=50):
 
     return train, test
 
+
 def test_net(n_epochs=1000, n_train=10000, n_test=1):
 
-    LEARNING_RATE = 0.01
+    LEARNING_RATE = 0.1
     DECAY = 0.99
     MINI_BATCH = 100
 
     TEST_BATCH = 10
 
-    N_HIDDEN = 4
-    HIDDEN_STATE = np.zeros(shape=(MINI_BATCH, 1, N_HIDDEN))
-    HIDDEN_STATE_TEST = np.zeros(shape=(TEST_BATCH, 1, N_HIDDEN))
+    N_HIDDEN = 10
+    HIDDEN_STATE = np.zeros(shape=(MINI_BATCH, 1, N_HIDDEN), dtype=theano.config.floatX)
+    HIDDEN_STATE_TEST = np.zeros(shape=(TEST_BATCH, 1, N_HIDDEN), dtype=theano.config.floatX)
 
     train, test = generate_rnn(2, 1, n_hidden=N_HIDDEN)
 
@@ -95,7 +98,7 @@ def test_net(n_epochs=1000, n_train=10000, n_test=1):
 
 if __name__ == '__main__':
     test_net()
-    for nums, sums in ng.generate_data(1, size=5):
-        print(ng.as_digits(nums[:,:,:,0]))
-        print(ng.as_digits(nums[:,:,:,1]))
-        print(ng.as_digits(sums))
+    # for nums, sums in ng.generate_data(1, size=5):
+    #     print(ng.as_digits(nums[:,:,:,0]))
+    #     print(ng.as_digits(nums[:,:,:,1]))
+    #     print(ng.as_digits(sums))

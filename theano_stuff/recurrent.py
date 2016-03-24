@@ -24,12 +24,18 @@ Description: Given two binary numbers, train an rnn to add them together. Lesson
 
 rng = np.random.RandomState(42)
 
-SIZE = 16
+SIZE = 8
 MIN, MAX = 0, 2 ** (SIZE - 1)
 
-# some helper functions for converting to and from binary string representations
-def to_binary(x):           return np.asarray([int(s) for s in reversed(('{0:0' + str(SIZE) + 'b}').format(x))])
-def as_binary_string(x):    return [s[::-1] for s in textwrap.wrap(''.join('1' if i > 0.5 else '0' for i in x.T.flatten()), SIZE)]
+
+def to_binary(x):
+    m = ('{0:b}').format(x)
+    y = [int(s) for s in reversed(m + '0' * (SIZE - len(m)))]
+    return np.asarray(y, theano.config.floatX)
+
+
+def as_binary_string(x):
+    return [s[::-1] for s in textwrap.wrap(''.join('1' if i > 0.5 else '0' for i in x.T.flatten()), SIZE)]
 
 
 def func(x, y):
@@ -41,10 +47,10 @@ def generate_data(n, size=1):
     for i in range(n):
         a, b = [rng.randint(MIN, MAX) for j in range(size)], [rng.randint(MIN, MAX) for j in range(size)]
 
-        nums = np.asarray([[to_binary(x), to_binary(y)] for x, y in zip(a, b)])
-        sums = np.asarray([[to_binary(func(x, y)) for x, y in zip(a, b)]])
+        nums = np.asarray([[to_binary(x), to_binary(y)] for x, y in zip(a, b)], dtype=theano.config.floatX)
+        sums = np.asarray([[to_binary(func(x, y)) for x, y in zip(a, b)]], dtype=theano.config.floatX)
 
-        yield np.asarray([nums]).transpose(3,1,0,2), np.asarray([sums]).transpose(3,2,1,0)
+        yield np.asarray([nums], theano.config.floatX).transpose(3,1,0,2), np.asarray([sums], theano.config.floatX).transpose(3,2,1,0)
 
 
 class RNN:
@@ -91,12 +97,12 @@ class RNN:
         """ Default transfer function to use """
         return T.tanh(x)
 
-    def _get_weights(self, n_in, n_out, name, low=-1, high=1):
-        """ Initialize a weight matrix of size `n_in` by `n_out` with random values from `low` to `high` """
-        return theano.shared(np.random.uniform(size=(n_in, n_out), low=low, high=high), name=name)
+    def _get_weights(self, n_in, n_out, name, low=-0.5, high=0.5):
+        """ Initialize a weight matrix of size `n_in` by `n_out` with random values from 0 to 1 """
+        return theano.shared(np.asarray(rng.rand(n_in, n_out) * (high - low) - low, dtype=theano.config.floatX), name=name)
 
 
-def test_net(n_epochs=100, n_train=10000, n_test=1):
+def test_net(n_epochs=1000, n_train=10000, n_test=1):
 
     LEARNING_RATE = 0.01
     DECAY = 0.98
@@ -104,9 +110,9 @@ def test_net(n_epochs=100, n_train=10000, n_test=1):
 
     TEST_BATCH = 10
 
-    N_HIDDEN = 2
-    HIDDEN_STATE = np.zeros(shape=(MINI_BATCH, 1, N_HIDDEN))
-    HIDDEN_STATE_TEST = np.zeros(shape=(TEST_BATCH, 1, N_HIDDEN))
+    N_HIDDEN = 4
+    HIDDEN_STATE = np.zeros(shape=(MINI_BATCH, 1, N_HIDDEN), dtype=theano.config.floatX)
+    HIDDEN_STATE_TEST = np.zeros(shape=(TEST_BATCH, 1, N_HIDDEN), dtype=theano.config.floatX)
 
     rnn = RNN(2, 1, n_hidden=N_HIDDEN)
 

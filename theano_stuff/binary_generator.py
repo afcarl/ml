@@ -1,4 +1,5 @@
 import textwrap
+import theano
 import numpy as np
 import math
 
@@ -8,12 +9,19 @@ class NumberGenerator:
         self.rng = np.random.RandomState(42)
         self.function = function
         self.bsize = size
-        self.size = math.ceil(math.log(function(2 ** size, 2 ** size), 2))
+        self.size = int(math.ceil(math.log(function(2 ** size, 2 ** size), 2)))
 
     #  some helper functions for converting to and from binary string representations
-    def to_binary(self, x):           return np.asarray([int(s) for s in reversed(('{0:0' + str(self.size) + 'b}').format(x))])
-    def as_binary_string(self, x):    return [s[::-1] for s in textwrap.wrap(''.join('1' if i > 0.5 else '0' for i in x.T.flatten()), self.size)]
-    def as_digits(self, x):           return [int(i, 2) for i in self.as_binary_string(x)]
+    def to_binary(self, x):
+        m = ('{0:b}').format(x)
+        y = [int(s) for s in reversed(m + '0' * (self.size - len(m)))]
+        return np.asarray(y, theano.config.floatX)
+
+    def as_binary_string(self, x):
+        return [s[::-1] for s in textwrap.wrap(''.join('1' if i > 0.5 else '0' for i in x.T.flatten()), self.size)]
+
+    def as_digits(self, x):
+        return [int(i, 2) for i in self.as_binary_string(x)]
 
     def generate_data(self, n, size=1):
         """ Generator to generate `n` data instances, each consisting of two input strings and one output string """
