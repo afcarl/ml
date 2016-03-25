@@ -47,6 +47,8 @@ This becomes especially obvious on QA2 and QA3, both far longer than QA1.
 '''
 
 from __future__ import print_function
+
+import os
 from functools import reduce
 import re
 import tarfile
@@ -57,9 +59,11 @@ np.random.seed(1337)  # for reproducibility
 from keras.utils.data_utils import get_file
 from keras.layers.embeddings import Embedding
 from keras.layers.core import Dense, Merge, Dropout, RepeatVector
-from keras.layers import recurrent
+from keras.layers import recurrent, LSTM, Convolution1D, MaxPooling1D
 from keras.models import Sequential
 from keras.preprocessing.sequence import pad_sequences
+
+weights_file = '/home/moloch/Documents/PycharmProjects/ml/keras_stuff/ir/qa_rnn_weights.h5'
 
 
 def tokenize(sent):
@@ -101,6 +105,13 @@ def parse_stories(lines, only_supporting=False):
     return data
 
 
+def print_batch(stories, queries, answers, correct_answers, idx_word):
+    for story, query, answer, c_answer in zip(stories, queries, np.argmax(answers, axis=1), np.argmax(correct_answers, axis=1)):
+        print(' '.join([idx_word[i] for i in story if i != 0]))
+        print(' '.join([idx_word[i] for i in query if i != 0]))
+        print('Predicted: %s, Correct: %s' % (idx_word[answer], idx_word[c_answer]))
+
+
 def get_stories(f, only_supporting=False, max_length=None):
     '''Given a file name, read the file, retrieve the stories, and then convert the sentences into a single story.
     If max_length is supplied, any stories longer than max_length tokens will be discarded.
@@ -120,27 +131,27 @@ def vectorize_stories(data, word_idx, story_maxlen, query_maxlen):
         xq = [word_idx[w] for w in query]
         y = np.zeros(len(word_idx) + 1)  # let's not forget that index 0 is reserved
         y[word_idx[answer]] = 1
+
         X.append(x)
         Xq.append(xq)
         Y.append(y)
+
     return pad_sequences(X, maxlen=story_maxlen), pad_sequences(Xq, maxlen=query_maxlen), np.array(Y)
 
-RNN = recurrent.LSTM
-EMBED_HIDDEN_SIZE = 50
-SENT_HIDDEN_SIZE = 100
-QUERY_HIDDEN_SIZE = 100
+LOAD_WEIGHTS = False
 BATCH_SIZE = 32
-EPOCHS = 40
-print('RNN / Embed / Sent / Query = {}, {}, {}, {}'.format(RNN, EMBED_HIDDEN_SIZE, SENT_HIDDEN_SIZE, QUERY_HIDDEN_SIZE))
+EPOCHS = 200
 
-path = get_file('babi-tasks-v1-2.tar.gz', origin='http://www.thespermwhale.com/jaseweston/babi/tasks_1-20_v1-2.tar.gz')
+path = '/media/moloch/HHD/MachineLearning/data/babi/tasks_1-20_v1-2.tar.gz'
 tar = tarfile.open(path)
+
 # Default QA1 with 1000 samples
 # challenge = 'tasks_1-20_v1-2/en/qa1_single-supporting-fact_{}.txt'
 # QA1 with 10,000 samples
 # challenge = 'tasks_1-20_v1-2/en-10k/qa1_single-supporting-fact_{}.txt'
 # QA2 with 1000 samples
 challenge = 'tasks_1-20_v1-2/en/qa2_two-supporting-facts_{}.txt'
+
 # QA2 with 10,000 samples
 # challenge = 'tasks_1-20_v1-2/en-10k/qa2_two-supporting-facts_{}.txt'
 train = get_stories(tar.extractfile(challenge.format('train')))
@@ -149,12 +160,20 @@ test = get_stories(tar.extractfile(challenge.format('test')))
 vocab = sorted(reduce(lambda x, y: x | y, (set(story + q + [answer]) for story, q, answer in train + test)))
 # Reserve 0 for masking via pad_sequences
 vocab_size = len(vocab) + 1
+
 word_idx = dict((c, i + 1) for i, c in enumerate(vocab))
+idx_word = dict((i+1, c) for i, c in enumerate(vocab))
+
 story_maxlen = max(map(len, (x for x, _, _ in train + test)))
 query_maxlen = max(map(len, (x for _, x, _ in train + test)))
 
 X, Xq, Y = vectorize_stories(train, word_idx, story_maxlen, query_maxlen)
 tX, tXq, tY = vectorize_stories(test, word_idx, story_maxlen, query_maxlen)
+
+print(X)
+print(Xq)
+print(tX)
+print(tXq)
 
 print('vocab = {}'.format(vocab))
 print('X.shape = {}'.format(X.shape))
@@ -164,25 +183,47 @@ print('story_maxlen, query_maxlen = {}, {}'.format(story_maxlen, query_maxlen))
 
 print('Build model...')
 
+# answer part
 sentrnn = Sequential()
-sentrnn.add(Embedding(vocab_size, EMBED_HIDDEN_SIZE, input_length=story_maxlen, mask_zero=True))
-sentrnn.add(Dropout(0.3))
+sentrnn.add(Embedding(vocab_size, 50, input_length=story_maxlen, mask_zero=True))
+# sentrnn.add(Dropout(0.25))
+# sentrnn.add(LSTM(EMBED_HIDDEN_SIZE, return_sequences=True))
 
+# question part
 qrnn = Sequential()
-qrnn.add(Embedding(vocab_size, EMBED_HIDDEN_SIZE, input_length=query_maxlen))
-qrnn.add(Dropout(0.3))
-qrnn.add(RNN(EMBED_HIDDEN_SIZE, return_sequences=False))
-qrnn.add(RepeatVector(story_maxlen))
+qrnn.add(Embedding(vocab_size, 50, input_length=query_maxlen))
+# qrnn.add(Dropout(0.25))
+qrnn.add(Convolution1D(nb_filter=64, filter_length=3, border_mode='valid', activation='relu',
+                        subsample_length=1))
+qrnn.add(MaxPooling1D(pool_length=2))
+qrnn.add(LSTM(50, return_sequences=True))
+qrnn.add(LSTM(50, return_sequences=True))
+qrnn.add(LSTM(50, return_sequences=True))
 
+# together they will predict the model
 model = Sequential()
-model.add(Merge([sentrnn, qrnn], mode='sum'))
-model.add(RNN(EMBED_HIDDEN_SIZE, return_sequences=False))
-model.add(Dropout(0.3))
+model.add(Merge([sentrnn, qrnn], mode='concat', concat_axis=1))
+model.add(Dropout(0.25))
+model.add(Convolution1D(nb_filter=64, filter_length=3, border_mode='valid', activation='relu',
+                        subsample_length=1))
+model.add(MaxPooling1D(pool_length=2))
+model.add(LSTM(50, return_sequences=False))
 model.add(Dense(vocab_size, activation='softmax'))
 
-model.compile(optimizer='adam', loss='categorical_crossentropy', class_mode='categorical')
+model.compile(optimizer='adam', loss='categorical_crossentropy')
 
-print('Training')
-model.fit([X, Xq], Y, batch_size=BATCH_SIZE, nb_epoch=EPOCHS, validation_split=0.05, show_accuracy=True)
-loss, acc = model.evaluate([tX, tXq], tY, batch_size=BATCH_SIZE, show_accuracy=True)
-print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
+if os.path.isfile(weights_file) and LOAD_WEIGHTS:
+    print('Loading weights from "%s"' % weights_file)
+    model.load_weights(weights_file)
+else:
+    print('Training')
+    model.fit([X, Xq], Y, batch_size=BATCH_SIZE, nb_epoch=EPOCHS, validation_split=0.05, show_accuracy=True)
+    loss, acc = model.evaluate([tX, tXq], tY, batch_size=BATCH_SIZE, show_accuracy=True)
+    print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
+    model.save_weights(weights_file)
+    print('Saved weights in "%s"' % weights_file)
+
+prediction = model.predict([tX, tXq], batch_size=BATCH_SIZE, verbose=1)
+
+print('Prediction')
+print_batch(tX, tXq, prediction, tY, idx_word)
