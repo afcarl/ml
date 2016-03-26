@@ -1,10 +1,6 @@
 from __future__ import print_function
 
-import xml.etree.cElementTree as ET
 import os
-
-import gensim
-from gensim.corpora import Dictionary
 
 # parameters
 from keras.callbacks import ModelCheckpoint
