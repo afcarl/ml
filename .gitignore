@@ -3,6 +3,8 @@
 # ignore mnist data
 *ubyte
 
+# weight files
+*.h5
 
 *.gz
 
