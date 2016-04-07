@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import theano
 from theano import tensor as T
 import numpy as np
@@ -22,7 +24,7 @@ Description: Given two binary numbers, train an rnn to add them together. Lesson
 4. I think something like this would be interesting to try on an analog platform? Would need to figure out math though.
 '''
 
-rng = np.random.RandomState(42)
+rng = np.random.RandomState(41)
 
 SIZE = 8
 MIN, MAX = 0, 2 ** (SIZE - 1)
@@ -104,13 +106,13 @@ class RNN:
 
 def test_net(n_epochs=1000, n_train=10000, n_test=1):
 
-    LEARNING_RATE = 0.01
-    DECAY = 0.99
+    LEARNING_RATE = 0.001
+    DECAY = 0.995
     MINI_BATCH = 100
 
     TEST_BATCH = 10
 
-    N_HIDDEN = 4
+    N_HIDDEN = 3
     HIDDEN_STATE = np.zeros(shape=(MINI_BATCH, 1, N_HIDDEN), dtype=theano.config.floatX)
     HIDDEN_STATE_TEST = np.zeros(shape=(TEST_BATCH, 1, N_HIDDEN), dtype=theano.config.floatX)
 
@@ -135,6 +137,7 @@ def test_net(n_epochs=1000, n_train=10000, n_test=1):
         print('Total error: %f' % costs)
 
 if __name__ == '__main__':
+    print('Testing network')
     test_net()
     # for n, sum in generate_data(1, size=100):
     #     print(n.shape)

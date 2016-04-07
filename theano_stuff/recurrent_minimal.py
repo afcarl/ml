@@ -8,7 +8,7 @@ rng = np.random.RandomState(42)
 ng = NumberGenerator(lambda x, y: 2 * x + 4 * y)
 
 def _transfer(x):
-    return T.tanh(x)
+    return T.nnet.sigmoid(x)
 
 
 def _get_weights(n_in, n_out, name, low=-1, high=1):
@@ -66,13 +66,13 @@ def generate_rnn(n_in, n_out, n_hidden=50):
 
 def test_net(n_epochs=1000, n_train=10000, n_test=1):
 
-    LEARNING_RATE = 0.1
+    LEARNING_RATE = 0.001
     DECAY = 0.99
     MINI_BATCH = 100
 
     TEST_BATCH = 10
 
-    N_HIDDEN = 10
+    N_HIDDEN = 2
     HIDDEN_STATE = np.zeros(shape=(MINI_BATCH, 1, N_HIDDEN), dtype=theano.config.floatX)
     HIDDEN_STATE_TEST = np.zeros(shape=(TEST_BATCH, 1, N_HIDDEN), dtype=theano.config.floatX)
 

@@ -30,4 +30,4 @@ for line in lines:
 
 assert len(questions) == len(answers) == 1087, 'There was an error processing the file somewhere (should have 1087 questions)'
 
-
+print(questions['1129'])
