@@ -27,7 +27,6 @@ class Vocab:
 
     def _compile(self):
         if self._compiled: return
-
         self.token2id = dict([(t, i) for i, t in enumerate(self._token_counts)])
         self.id2token = dict([(i, t) for i, t in enumerate(self._token_counts)])
 
